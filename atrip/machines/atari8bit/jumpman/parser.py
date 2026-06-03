@@ -30,8 +30,8 @@ def is_valid_level_segment(segment, strict=True):
 
 
 def is_bad_harvest_position(x, y, hx, hy):
-    hx = hx & 0x1f
-    hy = (hy & 0x1f) // 2
+    hx = int(hx) & 0x1f
+    hy = (int(hy) & 0x1f) // 2
     startx = (16 - hx) & 0x1f
     starty = (0 - hy) & 0xf
     endx = (startx + 8) & 0x1f
@@ -696,7 +696,7 @@ class LevelDef:
         level_data.extend(harvest_data)
         level_data.extend(painting_data)
 
-        return np.asarray(level_data, dtype=np.uint8), self.origin + harvest_index, self.get_ropeladder_data(), len(self.coins)
+        return np.asarray([b & 0xff for b in level_data], dtype=np.uint8), self.origin + harvest_index, self.get_ropeladder_data(), len(self.coins)
 
 
 class ScreenState(LevelDef):

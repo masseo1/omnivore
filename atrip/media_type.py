@@ -144,8 +144,8 @@ class DiskImage(Media):
     def get_index_of_sector(self, sector):
         if not self.is_sector_valid(sector):
             raise errors.InvalidSectorNumber("Sector %d out of range" % sector)
-        pos = (sector - self.starting_sector_label) * self.sector_size
-        return pos, self.sector_size
+        pos = int(sector - self.starting_sector_label) * int(self.sector_size)
+        return pos, int(self.sector_size)
 
     def get_contiguous_sectors_offsets(self, start, count=1):
         index, _ = self.get_index_of_sector(start)
@@ -166,7 +166,7 @@ class DiskImage(Media):
         for num in sector_numbers:
             index, size = self.get_index_of_sector(num)
             size = min(size, sector_size)
-            offsets[i:i+size] = np.arange(index, index + size)
+            offsets[i:i+size] = np.arange(index, index + size, dtype=offsets.dtype)
             i += size
         if i < len(offsets):
             # can happen in Atari DD disks; 1st 3 sectors are 128 bytes, not

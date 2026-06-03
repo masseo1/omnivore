@@ -203,10 +203,12 @@ class SawxApp(wx.App):
 
     def on_idle_after(self):
         try:
-            self.active_frame.active_editor.idle_when_active()
-            self.active_frame.sync_can_paste()
+            editor = self.active_frame.active_editor
+            if editor is not None:
+                editor.idle_when_active()
+                self.active_frame.sync_can_paste()
         except AttributeError as e:
-            log.warning(f"on_idle for editor {self.active_frame.active_editor} reported {e}")
+            log.warning(f"on_idle for editor {editor} reported {e}")
 
     def activate_timer(self, start=True):
         if start:

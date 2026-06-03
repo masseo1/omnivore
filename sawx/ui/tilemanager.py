@@ -543,6 +543,8 @@ class TileManager(wx.Window):
         for sidebar in self.sidebars:
             x, y, w, h = sidebar.set_size_inside(x, y, w, h)
             sidebar.do_layout()
+        if w < 1: w = 1
+        if h < 1: h = 1
         self.child.SetSize(x, y, w, h)
         self.child.do_layout()
         if layout_changed:
@@ -551,6 +553,7 @@ class TileManager(wx.Window):
     def set_header_size_inside(self, x, y, w, h):
         if self.header is not None and self.header.IsShown():
             _, hh = self.header.GetBestSize()
+            if hh > h: hh = max(h, 1)
             self.header.SetSize(x, y, w, hh)
             y += hh
             h -= hh
@@ -559,6 +562,7 @@ class TileManager(wx.Window):
     def set_minibuffer_size_inside(self, x, y, w, h):
         if self.minibuffer_panel is not None and self.minibuffer_panel.IsShown():
             _, hh = self.minibuffer_panel.GetBestSize()
+            if hh > h: hh = max(h, 1)
             self.minibuffer_panel.SetSize(x, y + h - hh, w, hh)
             h -= hh
         return x, y, w, h
@@ -566,6 +570,7 @@ class TileManager(wx.Window):
     def set_footer_size_inside(self, x, y, w, h):
         if self.footer is not None and self.footer.IsShown():
             _, hh = self.footer.GetBestSize()
+            if hh > h: hh = max(h, 1)
             self.footer.SetSize(x, y + h - hh, w, hh)
             h -= hh
         return x, y, w, h
@@ -2793,11 +2798,11 @@ if __name__ == '__main__':
             dc.SetPen(wx.LIGHT_GREY_PEN)
             dc.DrawLine(0, 0, size.x, size.y)
             dc.DrawLine(0, size.y, size.x, 0)
-            dc.DrawText(s, (size.x-w)/2, (size.y-height*5)/2)
+            dc.DrawText(s, (size.x-w)//2, (size.y-height*5)//2)
             pos = self.GetPosition()
             s = "Position: %d, %d" % (pos.x, pos.y)
             w, h = dc.GetTextExtent(s)
-            dc.DrawText(s, (size.x-w)/2, ((size.y-(height*5))/2)+(height*3))
+            dc.DrawText(s, (size.x-w)//2, ((size.y-(height*5))//2)+(height*3))
 
         def OnEraseBackground(self, event):
             pass

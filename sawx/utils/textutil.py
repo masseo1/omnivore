@@ -100,7 +100,7 @@ def detectEncoding(data):
     if encoding:
         return encoding, bom
     lines = getMagicComments(data)
-    regex = re.compile(b"coding[:=]\s*([-\w.]+)")
+    regex = re.compile(b"coding[:=]\\s*([-\\w.]+)")
     for txt in lines:
         match = regex.search(txt)
         if match:
@@ -309,8 +309,8 @@ def parse_int_label_dict(text, base=10, allow_equals=False):
     character and parse in the reverse order, where the label comes first and
     the address follows after the equals character.
     """
-    regex = re.compile("(0x|\$)?([0-9a-fA-F]+)[^a-zA-Z]+([a-zA-Z_]\w*)")
-    regex_eq = re.compile("([a-zA-Z_]\w*)[^a-zA-Z=]*=.*?(0x|\$)?([0-9a-fA-F]+)")
+    regex = re.compile(r"(0x|\$)?([0-9a-fA-F]+)[^a-zA-Z]+([a-zA-Z_]\w*)")
+    regex_eq = re.compile(r"([a-zA-Z_]\w*)[^a-zA-Z=]*=.*?(0x|\$)?([0-9a-fA-F]+)")
     d = {}
     for line in text.splitlines():
         match = None
@@ -358,7 +358,7 @@ def slugify(s):
 
     # "[some]___article's_title__"
     # "some___articles_title__"
-    s = re.sub('\W', '', s)
+    s = re.sub(r'\W', '', s)
 
     # "some___articles_title__"
     # "some   articles title  "
@@ -366,7 +366,7 @@ def slugify(s):
 
     # "some   articles title  "
     # "some articles title "
-    s = re.sub('\s+', ' ', s)
+    s = re.sub(r'\s+', ' ', s)
 
     # "some articles title "
     # "some articles title"

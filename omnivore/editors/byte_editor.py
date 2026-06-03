@@ -321,10 +321,14 @@ class ByteEditor(TileManagerBase):
 
     @property
     def linked_base(self):
+        if self.focused_viewer is None:
+            return None
         return self.focused_viewer.linked_base
 
     @property
     def segment_uuid(self):
+        if self.focused_viewer is None:
+            return None
         return self.focused_viewer.linked_base.segment_uuid
 
     @property
@@ -720,6 +724,8 @@ class ByteEditor(TileManagerBase):
     #### idle handler
 
     def idle_when_active(self):
+        if self.focused_viewer is None:
+            return
         segment = self.linked_base.segment
         if segment.has_dependent_files:
             segment.check_dependent_files()

@@ -129,7 +129,7 @@ def send_email_via_gmail(subject, message, sender, passwd, recipient):
         responses.append(s.quit())
         sent = True
     except Exception as e:
-        wx.MessageBox("Unable to send email:\n\%s\n\nPlease email the bug report to %s" % (str(e), recipient))
+        wx.MessageBox("Unable to send email:\n%s\n\nPlease email the bug report to %s" % (str(e), recipient))
         responses.append(e)
     text = "\n".join([str(r) for r in responses])
     return sent, text
@@ -152,7 +152,7 @@ def send_email_via_webbrowser(subject, message, recipient):
         webbrowser.open(url)
         sent = True
     except Exception as e:
-        wx.MessageBox("Unable to send email:\n\%s\n\nPlease email the bug report to %s" % (str(e), recipient))
+        wx.MessageBox("Unable to send email:\n%s\n\nPlease email the bug report to %s" % (str(e), recipient))
         error = str(e)
     return sent, error
 

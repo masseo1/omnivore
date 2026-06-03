@@ -1,0 +1,265 @@
+#!/usr/bin/env python
+"""
+Omnivore dependency checker for Linux.
+
+Usage:
+    python scripts/check_deps
+
+Checks that all required system packages and Python modules are available
+for building and running Omnivore on Linux (Ubuntu/Debian).
+"""
+
+import importlib.util
+import os
+import shutil
+import subprocess
+import sys
+import warnings
+
+
+def green(msg):
+    return f"\033[92m{msg}\033[0m"
+
+def red(msg):
+    return f"\033[91m{msg}\033[0m"
+
+def yellow(msg):
+    return f"\033[93m{msg}\033[0m"
+
+def bold(msg):
+    return f"\033[1m{msg}\033[0m"
+
+
+CHECKS_PASSED = True
+CHECKED = 0
+PASSED = 0
+FAILED = 0
+WARNINGS = 0
+
+
+def check(ok, name, hint=""):
+    global CHECKS_PASSED, CHECKED, PASSED, FAILED
+    CHECKED += 1
+    if ok:
+        PASSED += 1
+        print(f"  [{green('OK')}] {name}")
+    else:
+        CHECKS_PASSED = False
+        FAILED += 1
+        msg = f"  [{red('FAIL')}] {name}"
+        if hint:
+            msg += f"\n         {hint}"
+        print(msg)
+
+
+def warn(ok, name, hint=""):
+    global CHECKS_PASSED, CHECKED, PASSED, FAILED, WARNINGS
+    CHECKED += 1
+    if ok:
+        PASSED += 1
+        print(f"  [{green('OK')}] {name}")
+    else:
+        CHECKS_PASSED = False
+        WARNINGS += 1
+        msg = f"  [{yellow('WARN')}] {name}"
+        if hint:
+            msg += f"\n         {hint}"
+        print(msg)
+
+
+PKG_HINTS = {
+    "libgtk-3-dev": "sudo apt install libgtk-3-dev",
+    "libgstreamer1.0-dev": "sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev",
+    "libwebkit2gtk-4.0-dev": "sudo apt install libwebkit2gtk-4.0-dev",
+    "libwebkit2gtk-4.1-dev": "sudo apt install libwebkit2gtk-4.1-dev",
+    "g++": "sudo apt install g++",
+    "python3-dev": "sudo apt install python3-dev",
+}
+
+
+def pkgconfig_check(pkg_name, deb_pkg=None):
+    if deb_pkg is None:
+        deb_pkg = pkg_name
+    try:
+        result = subprocess.run(
+            ["pkg-config", "--exists", pkg_name],
+            capture_output=True, text=True
+        )
+        ok = result.returncode == 0
+        hint = PKG_HINTS.get(deb_pkg, f"sudo apt install {deb_pkg}") if not ok else ""
+        return ok, hint
+    except FileNotFoundError:
+        return False, "pkg-config not found; sudo apt install pkg-config"
+
+
+def pip_check(package_name, import_name=None):
+    if import_name is None:
+        import_name = package_name.replace("-", "_")
+    # Some packages keep hyphens in import name, try both
+    ok = importlib.util.find_spec(import_name) is not None
+    if not ok and "-" not in import_name:
+        alt = import_name.replace("_", "-")
+        ok = importlib.util.find_spec(alt) is not None
+    hint = f"pip install {package_name}" if not ok else ""
+    return ok, hint
+
+
+def main():
+    global CHECKS_PASSED
+    print(bold(f"\nOmnivore Dependency Checker\n"))
+    print(f"Python: {sys.version.split()[0]}   Platform: {sys.platform}   Arch: {os.uname().machine}")
+    print()
+
+    # ── Python version ──
+    print(bold("1. Python Version"))
+    check(sys.version_info >= (3, 6),
+          "Python >= 3.6",
+          "Install Python 3.6 or later from your package manager")
+
+    # ── Build tools ──
+    print(bold("\n2. Build Tools"))
+    check(shutil.which("gcc") is not None,
+          "C compiler (gcc) found",
+          "sudo apt install build-essential")
+    check(shutil.which("g++") is not None,
+          "C++ compiler (g++) found",
+          "sudo apt install g++")
+    check(shutil.which("pkg-config") is not None,
+          "pkg-config found",
+          "sudo apt install pkg-config")
+    check(shutil.which("git") is not None,
+          "git found",
+          "sudo apt install git")
+
+    # ── System packages (pkg-config) ──
+    print(bold("\n3. System Packages (needed to BUILD wxPython from source)"))
+    print("    If wxPython is already importable (via system package or pre-built"),
+    print("    wheel), these are not required. Check step 4 first.")
+    print()
+    has_wx = importlib.util.find_spec("wx") is not None
+    if has_wx:
+        print(f"    {green('wxPython already installed -- skipping system pkg check')}")
+    else:
+        for pkg, deb in [("gstreamer-1.0", "libgstreamer1.0-dev"),
+                         ("gstreamer-plugins-base-1.0", "libgstreamer-plugins-base1.0-dev"),
+                         ("gtk+-3.0", "libgtk-3-dev"),
+                         ("webkit2gtk-4.1", "libwebkit2gtk-4.1-dev")]:
+            ok, hint = pkgconfig_check(pkg, deb)
+            warn(ok, f"System package: {deb}", hint)
+
+        ok_40, _ = pkgconfig_check("webkit2gtk-4.0", "libwebkit2gtk-4.0-dev")
+        if ok_40:
+            warn(True, "System package: libwebkit2gtk-4.0-dev (alternative)")
+        else:
+            warn(False, "System package: libwebkit2gtk-4.0-dev (alternative)",
+                 "sudo apt install libwebkit2gtk-4.0-dev\n"
+                 "         (Ubuntu 22.04 or older; on 24.04+ use libwebkit2gtk-4.1-dev)")
+
+    # ── Python packages ──
+    print(bold("\n4. Python Packages (pip)"))
+    python_pkgs = [
+        "numpy",
+        ("wxpython", "wx"),
+        ("python-slugify", "slugify"),
+        "ply",
+        "lz4",
+        ("construct", None),  # Any version is OK for basic use
+        "pytz",
+        ("pyparsing", None),
+        "configobj",
+        ("bson", None),
+        "jsonpickle",
+        ("pyopengl", "OpenGL"),
+        "fleep",
+        "appdirs",
+        ("pillow", "PIL"),
+        "six",
+        "pathlib2",
+        ("cython", "Cython"),
+    ]
+    for entry in python_pkgs:
+        if isinstance(entry, tuple):
+            pkg_name, import_name = entry
+        else:
+            pkg_name = import_name = entry
+        ok, hint = pip_check(pkg_name, import_name)
+        if pkg_name == "wxpython":
+            warn(ok, pkg_name, hint)
+        else:
+            check(ok, pkg_name, hint)
+
+    # ── Git submodules ──
+    print(bold("\n5. Git Submodules"))
+    try:
+        result = subprocess.run(
+            ["git", "submodule", "status"],
+            capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        submodules = [line.strip() for line in result.stdout.strip().split("\n") if line.strip()]
+        all_ok = all(not line.startswith("-") for line in submodules)
+        if submodules:
+            check(all_ok,
+                  f"{len(submodules)} submodule(s) initialized",
+                  "Run: git submodule update --init --recursive")
+            for sm in submodules:
+                if sm.startswith("-"):
+                    _, path = sm[1:].split(" ", 1)
+                    parts = path.rsplit(" ", 1)
+                    print(f"         {red('MISSING')} {parts[0]}")
+        else:
+            check(False, "No submodules found",
+                  "Run: git submodule update --init --recursive")
+    except FileNotFoundError:
+        check(False, "git not found for submodule check", "sudo apt install git")
+
+    # ── Build artifacts ──
+    print(bold("\n6. C Extension Build Status"))
+    so_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    extensions = [
+        "omnivore/arch/antic_speedups*.so",
+        "omnivore/arch/pixel_speedups*.so",
+        "omnivore/emulators/atari8bit/libatari800*.so",
+        "omnivore/emulators/generic6502/lib6502*.so",
+        "atrip/disassemblers/libudis*.so",
+        "atrip/assemblers/libmac65*.so",
+    ]
+    import glob
+    found_any = False
+    for pattern in extensions:
+        full = os.path.join(so_dir, pattern)
+        found = glob.glob(full)
+        if found:
+            found_any = True
+        check(len(found) > 0,
+              f"{pattern.split('/')[-1]}",
+              "Run: python setup.py build_ext --inplace")
+    if found_any:
+        print(f"         {green('Extensions built successfully')}")
+    else:
+        print(f"         {red('No C extensions found -- build required')}")
+
+    # ── Summary ──
+    print()
+    print(bold("═" * 50))
+    print(f"  Checks:  {CHECKED}")
+    print(f"  Passed:  {green(str(PASSED))}")
+    if FAILED:
+        print(f"  Failed:  {red(str(FAILED))}")
+    else:
+        print(f"  Failed:  {str(FAILED)}")
+    if WARNINGS:
+        print(f"  Warnings: {yellow(str(WARNINGS))}")
+    else:
+        print(f"  Warnings: {str(WARNINGS)}")
+
+    if FAILED == 0:
+        print(f"\n  {green('All critical dependencies satisfied!')}")
+    else:
+        print(f"\n  {red(f'{FAILED} critical check(s) failed.')}  Resolve the issues above and re-run.")
+    print()
+
+    return 0 if CHECKS_PASSED else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

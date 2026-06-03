@@ -320,13 +320,13 @@ class FontComboBox(wx.adv.OwnerDrawnComboBox):
 
         if flags & wx.adv.ODCB_PAINTING_CONTROL:
             # for painting the control itself
-            dc.DrawText(face, r.x + 5, (r.y + 5) + ((r.height / 2) - dc.GetCharHeight()) / 2)
+            dc.DrawText(face, r.x + 5, (r.y + 5) + ((r.height // 2) - dc.GetCharHeight()) // 2)
 
         else:
             # for painting the items in the popup
             dc.DrawText(face,
                         r.x + 3,
-                        (r.y + 5) + ((r.height / 2) - dc.GetCharHeight()) / 2
+                        (r.y + 5) + ((r.height // 2) - dc.GetCharHeight()) // 2
                         )
 
     # Overridden from OwnerDrawnComboBox, should return the height

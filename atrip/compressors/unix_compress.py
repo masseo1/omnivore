@@ -48,6 +48,8 @@ def unlzw(data):
 
     # Convert input data stream to byte array, and get length of that array
     try:
+        if isinstance(data, str):
+            data = data.encode("latin-1")
         ba_in = bytearray(data)
     except ValueError:
         raise TypeError("Unable to convert inputted data to bytearray")

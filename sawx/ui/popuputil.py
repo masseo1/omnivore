@@ -188,8 +188,8 @@ class SpringTabItemRenderer(object):
             w2 = tw + h/2
             x -= (w2 - w) / 2
             w = w2
-        dc.DrawRoundedRectangle(x, y, w, h, h / 2)
-        dc.DrawText(s, x + w/2 - tw/2, y + h/2 - th/2)
+        dc.DrawRoundedRectangle(x, y, w, h, h // 2)
+        dc.DrawText(s, x + w//2 - tw//2, y + h//2 - th//2)
 
 
 class SpringTabItemVerticalRenderer(SpringTabItemRenderer):
@@ -230,12 +230,12 @@ class SpringTabItemVerticalRenderer(SpringTabItemRenderer):
         th, tw = dc.GetTextExtent(label)
         #dc.DrawText(label, (width-tw)/2+dx, (height-th)/2+dy)
         if self.popleft:
-            x = (width-tw)/2+dx + tw
-            y = dy + item.border + self.spacing_between_items/2
+            x = (width-tw)//2+dx + tw
+            y = dy + item.border + self.spacing_between_items//2
             dc.DrawRotatedText(label, x, y, 270.0)
         else:
-            x = (width-tw)/2+dx
-            y = height + dy - item.border - self.spacing_between_items/2
+            x = (width-tw)//2+dx
+            y = height + dy - item.border - self.spacing_between_items//2
             dc.DrawRotatedText(label, x, y, 90.0)
         num = item.notification_count
         if num > 0:

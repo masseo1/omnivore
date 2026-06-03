@@ -84,7 +84,7 @@ class AtariCasDirent(Dirent):
                 if flag == 0xfe:
                     # end of file record
                     keep_reading = False
-                offsets[offset_index:offset_index + data_size] = np.arange(index, index + data_size)
+                offsets[offset_index:offset_index + data_size] = np.arange(index, index + data_size, dtype=offsets.dtype)
                 offset_index += data_size
             index += chunk.record_length
         self.temporary_offset_storage = np.copy(offsets[0:offset_index])

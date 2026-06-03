@@ -251,8 +251,8 @@ class AtariDosDirent(Dirent):
         media = self.filesystem.media
         offsets = np.empty(self.filesystem.max_file_size, dtype=np.uint32)
         length = 0
-        next_sector = self.starting_sector
-        sectors_remaining = self.num_sectors
+        next_sector = int(self.starting_sector)
+        sectors_remaining = int(self.num_sectors)
         sectors_seen = set()
 
         while next_sector > 0 and sectors_remaining > 0:
@@ -262,16 +262,16 @@ class AtariDosDirent(Dirent):
                 length = 0
                 self.is_sane = False
                 break
-            num_bytes = media[index + size - 1]
-            file_num = media[index + size - 3] >> 2
-            if file_num != self.file_num:
+            num_bytes = int(media[index + size - 1])
+            file_num = int(media[index + size - 3]) >> 2
+            if file_num != int(self.file_num):
                 raise errors.FileNumberMismatchError164(f"Expecting file {self.file_num}, found {file_num}")
             sectors_seen.add(next_sector)
 
-            offsets[length:length + num_bytes] = np.arange(index, index+num_bytes)
+            offsets[length:length + num_bytes] = np.arange(index, index+num_bytes, dtype=offsets.dtype)
             length += num_bytes
 
-            next_sector = ((media[index + size - 3] & 0x3) << 8) + media[index + size - 2]
+            next_sector = ((int(media[index + size - 3]) & 0x3) << 8) + int(media[index + size - 2])
             if next_sector in sectors_seen:
                 raise errors.FileStructureError(f"Bad sector pointer data: attempting to reread sector {next_sector}")
             sectors_remaining -= 1

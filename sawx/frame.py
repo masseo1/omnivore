@@ -163,7 +163,10 @@ class SawxFrame(wx.Frame):
 
     def set_title(self):
         app = wx.GetApp()
-        title = f"{self.active_editor.title} - {app.app_name}"
+        if self.active_editor is not None:
+            title = f"{self.active_editor.title} - {app.app_name}"
+        else:
+            title = app.app_name
         self.SetTitle(title)
 
     def sync_name(self):

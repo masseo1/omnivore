@@ -137,7 +137,11 @@ class TileManagerBase(SawxEditor):
             self.change_initial_segment(s["initial_segment_type"])
 
         viewer_metadata = {}
-        for v in viewers:
+        if isinstance(viewers, dict):
+            viewer_items = viewers.values()
+        else:
+            viewer_items = viewers
+        for v in viewer_items:
             viewer_metadata[v['uuid']] = v
             log.debug("metadata: viewer[%s]=%s" % (v['uuid'], str(v)))
 
