@@ -1,8 +1,25 @@
 #!/usr/bin/env python
 
 # Standard library imports.
+import os
 import sys
 import logging
+
+# Ensure wx GTK GL library is found when using system wxPython on arm64.
+# LD_LIBRARY_PATH set via os.environ does not affect the already-running
+# process's dynamic linker, so we pre-load the library via ctypes instead.
+try:
+    import ctypes
+    _venv_lib = os.environ.get("VIRTUAL_ENV", "")
+    if _venv_lib:
+        _venv_lib = os.path.join(_venv_lib, "lib")
+    else:
+        _venv_lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib")
+    _gl_lib = os.path.join(_venv_lib, "libwx_gtk3u_gl-3.2.so.0")
+    if os.path.exists(_gl_lib):
+        ctypes.CDLL(_gl_lib, ctypes.RTLD_GLOBAL)
+except Exception:
+    pass
 
 
 last_trace_was_system_call = False

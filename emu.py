@@ -1,9 +1,24 @@
 #!/usr/bin/env python
 
 # Standard library imports.
+import os
 import sys
 import argparse
 import logging
+
+# Ensure wx GTK GL library is found when using system wxPython on arm64.
+try:
+    import ctypes
+    _venv_lib = os.environ.get("VIRTUAL_ENV", "")
+    if _venv_lib:
+        _venv_lib = os.path.join(_venv_lib, "lib")
+    else:
+        _venv_lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib")
+    _gl_lib = os.path.join(_venv_lib, "libwx_gtk3u_gl-3.2.so.0")
+    if os.path.exists(_gl_lib):
+        ctypes.CDLL(_gl_lib, ctypes.RTLD_GLOBAL)
+except Exception:
+    pass
 
 
 last_trace_was_system_call = False
@@ -126,7 +141,18 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    import sys
+    try:
+        import wx
+    except ImportError:
+        venv = os.environ.get("VIRTUAL_ENV", "")
+        if venv:
+            print("Error: wxPython not found in the current Python environment.", file=sys.stderr)
+            print(f"Virtual environment is set to: {venv}", file=sys.stderr)
+            print(f"Try: source {venv}/bin/activate && python {sys.argv[0]}", file=sys.stderr)
+        else:
+            print("Error: wxPython not found. Activate the virtual environment first.", file=sys.stderr)
+            print("Try: source /tmp/omnivore-venv/bin/activate && python", sys.argv[0], file=sys.stderr)
+        sys.exit(1)
     from sawx.startup import setup_frozen_logging
     
     setup_frozen_logging()

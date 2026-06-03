@@ -84,14 +84,14 @@ Linux (or Using a Virtual Environment)
 Binaries for linux are not currently available, although I would like to
 provide packages for Ubuntu, Linux Mint and Gentoo at some point.
 
-To run on linux, you'll have to have a Python 3.6 environment set up. How to do
+To run on linux, you'll have to have a Python 3.6+ environment set up. How to do
 this will depend on your distribution, but there's a good chance that if it is
 not installed already, your package manager will be able to install it for you.
 
 I'd recommend using a virtual environment so you don't clutter up the system
 python, but if you're willing to risk it, the virtualenv step is optional::
 
-    virtualenv /some/path/to/your/virtualenv
+    python -m venv /some/path/to/your/virtualenv
     source /some/path/to/your/virtualenv/bin/activate
 
 Then, install with::
@@ -99,19 +99,33 @@ Then, install with::
     pip install omnivore
 
 On some distributions, you will need development libraries to install wxPython
-4 because pip needs to compile it from source. On ubuntu this is::
+4 because pip needs to compile it from source. On Ubuntu this is::
 
-    sudo apt-get install libgstreamer1.0-dev libgtk-3-dev libwebkit2gtk-4.0-dev
+    sudo apt-get install libgstreamer1.0-dev libgtk-3-dev
+
+The webkit2gtk package name depends on your Ubuntu version:
+
+- **Ubuntu 22.04 LTS (Jammy) and older**::
+
+    sudo apt install libwebkit2gtk-4.0-dev
+
+- **Ubuntu 24.04 LTS (Noble) and newer**::
+
+    sudo apt install libwebkit2gtk-4.1-dev
 
 Linux Mint does not have a C++ compiler installed by default, so additional
 packages are needed::
     
     sudo apt install g++ python3-dev
 
-
 And on Gentoo this is::
 
     emerge -av net-libs/webkit-gtk
+
+**Note for arm64/aarch64:** wxPython does not provide pre-built wheels for
+Linux arm64. You may need to build wxPython from source (requires the
+development packages listed above) or install the system wxPython package
+(``python3-wxgtk4.0``) if available for your distribution.
 
 Installing From Source
 ======================
@@ -124,6 +138,8 @@ Prerequisites
 
 * Python 3.6 and above, capable of building C extensions
 * git
+* C compiler (gcc/clang)
+* Cython (for building C extensions from .pyx files)
 
 Note: Python 2 is not supported.
 
@@ -135,6 +151,29 @@ Windows doesn't come with a C compiler, but happily, Microsoft provides a
 cut-down version of their Visual Studio compiler just for compiling Python
 extensions! Download and install it from
 `here <https://www.microsoft.com/en-us/download/details.aspx?id=44266>`_.
+
+System Dependencies (Linux)
+---------------------------
+
+On Ubuntu/Debian, install the required development packages::
+
+    sudo apt install build-essential python3-dev git
+    sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgtk-3-dev
+    # Ubuntu 22.04 LTS and older:
+    sudo apt install libwebkit2gtk-4.0-dev
+    # Ubuntu 24.04 LTS and newer:
+    sudo apt install libwebkit2gtk-4.1-dev
+
+Dependency Checker
+------------------
+
+Before building, run the dependency checker to identify any missing
+requirements::
+
+    python scripts/check_deps
+
+This will check for the correct Python version, system packages, Python
+packages, git submodule status, and pre-built C extensions.
 
 Virtualenv Setup
 ----------------
@@ -150,17 +189,43 @@ Get the source from cloning it from github::
     $ cd omnivore
     $ git submodule init
     $ git submodule update
+
+Install all Python dependencies::
+
+    pip install numpy cython python-slugify ply lz4 'construct<2.9' pytz 'pyparsing<3.0' configobj bson jsonpickle pyopengl appdirs pillow six pathlib2 wxpython
+
+Build the C extensions (Cython modules and emulator code)::
+
     $ python setup.py build_ext --inplace
+
+If the build succeeds, you should see ``.so`` files in the ``omnivore/arch/``,
+``omnivore/emulators/``, ``atrip/disassemblers/``, and
+``atrip/assemblers/`` directories.
+
+**Note:** The ``setup.py`` file now automatically detects the numpy include path
+instead of using a hardcoded path, so it should work on any Linux distribution
+out of the box.
 
 
 Running the Program
 -------------------
 
-Once the C modules are built (the Enthought library requires a C module and
-Omnivore has those several Cython modules for graphic speedups), you can run
-the program from the main source directory using::
+Once the C modules are built, you can run the program from the main source
+directory using::
 
     $ python run.py
+
+Or use the installed script (if installed via pip)::
+
+    $ omnivore
+
+If you only need the command-line disk image tools (without the GUI)::
+
+    $ python -m atrip [args]
+
+Or via the bundled script::
+
+    $ python scripts/atrip [args]
 
 
 Development
