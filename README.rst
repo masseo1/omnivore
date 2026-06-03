@@ -1,8 +1,71 @@
 
 =========================================================
-Omnivore 2.0 (pre-release, very very alpha version)
+Omnivore 2.0 — The Retrocomputing Reverse Engineering Toolbox
 =========================================================
 
+.. code::
+   :language: mermaid
+
+   %%{
+     init: {
+       'theme': 'base',
+       'themeVariables': {
+         'primaryColor': '#1a1a2e',
+         'primaryTextColor': '#e0e0e0',
+         'primaryBorderColor': '#4a4a6a',
+         'lineColor': '#8888cc',
+         'secondaryColor': '#16213e',
+         'tertiaryColor': '#0f3460'
+       }
+     }
+   }%%
+
+   flowchart TB
+       subgraph GUI["<b>GUI Layer</b>"]
+           direction LR
+           FE["<b>wxPython Frontend</b><br/>Frame · Menus · Dialogs<br/>sawx/frame.py, sawx/ui/"]:::gui
+           ED["<b>Editors</b><br/>Byte · Tile · Map · Hex<br/>omnivore/editors/"]:::gui
+           EMU_UI["<b>Emulator UI</b><br/>Control · Debugger · Rewind<br/>omnivore/emulators/"]:::gui
+       end
+
+       subgraph Backend["<b>Backend Libraries</b>"]
+           ATR["<b>atrip</b><br/>Disk image parser<br/>Filesystems · Formats<br/>Compression · Archives"]:::backend
+           SAWX["<b>sawx</b><br/>Application framework<br/>Text util · Preferences<br/>Tile manager"]:::backend
+           ASM["<b>Assembler</b><br/>ATasm / MAC/65<br/>6502 cross-assembler"]:::backend
+           DIS["<b>Disassembler</b><br/>libudis (C)<br/>6502/65C02/6809/..."]:::backend
+       end
+
+       subgraph Emulators["<b>Emulator Engines</b>"]
+           L6502["<b>lib6502</b><br/>Generic 6502 CPU<br/>6502-emu core (C)"]:::emu
+           CRAB["<b>Crabapple</b><br/>Apple II video<br/>Hi-res/Lo-res/Text"]:::emu
+           L800["<b>libatari800</b><br/>Atari 8-bit system<br/>atari800 port (C)"]:::emu
+       end
+
+       subgraph CExt["<b>C Extensions (Cython)</b>"]
+           ANTIC["antic_speedups<br/>ANTIC graphics"]:::cext
+           PIXEL["pixel_speedups<br/>Pixel ops"]:::cext
+           UDIS_CEXT["libudis<br/>Fast disasm"]:::cext
+           MAC65_CEXT["libmac65<br/>ATasm assembler"]:::cext
+       end
+
+       FE --> ED
+       FE --> EMU_UI
+       ED --> ATR
+       ED --> SAWX
+       EMU_UI --> L6502
+       EMU_UI --> L800
+       L6502 --> CRAB
+       ATR --> DIS
+       ATR --> ASM
+       DIS --> UDIS_CEXT
+       ASM --> MAC65_CEXT
+       ED --> ANTIC
+       ED --> PIXEL
+
+       classDef gui fill:#2d5a27,stroke:#4caf50,stroke-width:2px,color:#e0e0e0
+       classDef backend fill:#5c2a7a,stroke:#9c27b0,stroke-width:2px,color:#e0e0e0
+       classDef emu fill:#6a1a1a,stroke:#f44336,stroke-width:2px,color:#e0e0e0
+       classDef cext fill:#1a4a6a,stroke:#2196f3,stroke-width:2px,color:#e0e0e0
 
 
 Abstract
@@ -11,31 +74,32 @@ Abstract
 Omnivore - the retrocomputing reverse engineering toolbox
 
 Omnivore is a cross-platform app for modern hardware (running linux, MacOS and
-Windows) to work with executables or media images of Atari 8-bit, Apple ][+, and other retrocomputer machines and game consoles.
+Windows) to work with executables or media images of Atari 8-bit, Apple ][+,
+and other retrocomputer machines and game consoles.
 
-Features include (in various states of operation at the moment):
+Features include:
 
 * emulator with debugger (see below)
 * binary editor
 * disassembler (6502, 65C02, 6809, and many other 8-bit CPU architectures)
-* 6502 cross-assembler (ATasm, uses MAC/65 syntox)
+* 6502 cross-assembler (ATasm, uses MAC/65 syntax)
 * graphics editor
 * map editor
 * Jumpman level editor (Atari 8-bit platform only)
+* disk image browser and manipulator (via atrip)
 
 Emulator
----------
+--------
 
-Omnivore provides unified front-end to several 8-bit CPU and system emulators
+Omnivore provides a unified front-end to several 8-bit CPU and system emulators
 to provide a common set of control methods for both normal operation and
-debugging purposes. This is used as the basis for the emulation support in
-Omnivore.
+debugging purposes.
 
 Currently available are:
 
-* libatari800, an embedded port of the `atari800 emulator <https://atari800.github.io/>`_
-* lib6502, a generic 6502 emulator based on `David Buchanan's 6502-emu <https://github.com/DavidBuchanan314/6502-emu>`_
-* crabapple, a thin layer atop of lib6502 that provides some (tiny, small amount of) Apple ][+ compatibility
+* **libatari800**, an embedded port of the `atari800 emulator <https://atari800.github.io/>`_
+* **lib6502**, a generic 6502 emulator based on `David Buchanan's 6502-emu <https://github.com/DavidBuchanan314/6502-emu>`_
+* **crabapple**, a thin layer atop lib6502 that provides Apple ][+ video emulation (hi-res, lo-res, text modes, soft-switches)
 
 The debugger includes:
 
@@ -136,7 +200,7 @@ improvements, you can install and run the source distribution.
 Prerequisites
 -------------
 
-* Python 3.6 and above, capable of building C extensions
+* Python 3.8 and above (3.6+ may work but is EOL), capable of building C extensions
 * git
 * C compiler (gcc/clang)
 * Cython (for building C extensions from .pyx files)
@@ -234,10 +298,21 @@ Development
 Graphics Speedups
 -----------------
 
-The Cython extension is used to speed up some of the time-critical code (like
-repainting all the character graphics), but it is only required if you were
-going to debug or recompile those specific .pyx files.  Cython is not needed
-for hacking on the python code.
+Cython extensions speed up time-critical code (repainting character graphics,
+ANTIC display generation, pixel format conversion). Cython is only needed if
+you modify the ``.pyx`` files; pre-built ``.so`` files are included for
+aarch64 Linux.
+
+Recent improvements (2024-2025):
+
+* **NumPy 2.x compatibility**: explicit ``dtype`` in ``np.arange`` calls,
+  explicit ``int()`` casts for numpy scalar types throughout atrip
+* **Python 3.12 support**: regex raw strings, integer division fixes,
+  ``None``-safe editor/viewer guards
+* **Dependency checker**: ``scripts/check_deps`` validates your build
+  environment before you start
+* **wxWidgets robustness**: size clamping to prevent negative-dimension
+  warnings in tile manager layout
 
 Should you change a cython file (e.g. omnivore/arch/antic_speedups.pyx),
 use the command ``python setup-cython.py`` to turn that into a C extension,
